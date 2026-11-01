@@ -1,0 +1,81 @@
+name: CI/CD - Iris MLOps
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/iris-mlops
+
+jobs:
+  test:
+    name: Lint, train and test model
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest flake8
+
+      - name: Lint with flake8
+        run: flake8 . --max-line-length=110
+
+      - name: Train model
+        run: python train.py
+
+      - name: Run unit tests
+        run: pytest -v
+
+      - name: Upload model artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: iris-model
+          path: model/
+
+  docker:
+    name: Build, smoke-test and push Docker image
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t iris-mlops:${{ github.sha }} .
+
+      - name: Smoke test container
+        run: |
+          docker run -d --name iris -p 8501:8501 -p 8000:8000 iris-mlops:${{ github.sha }}
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8501/_stcore/health && break
+            sleep 2
+          done
+          curl -sf http://localhost:8501/_stcore/health
+          curl -sf http://localhost:8000/metrics | grep iris_model_accuracy
+          docker rm -f iris
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push'
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Push image to GHCR
+        if: github.event_name == 'push'
+        run: |
+          docker tag iris-mlops:${{ github.sha }} $IMAGE_NAME:${{ github.sha }}
+          docker tag iris-mlops:${{ github.sha }} $IMAGE_NAME:latest
+          docker push $IMAGE_NAME:${{ github.sha }}
+          docker push $IMAGE_NAME:latest
