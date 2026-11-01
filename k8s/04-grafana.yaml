@@ -167,17 +167,16 @@ spec:
           configMap:
             name: grafana-dashboards
 ---
-# Grafana UI exposed on http://localhost:30300 (anonymous viewer access; admin login admin/admin)
+# Grafana UI exposed on http://localhost:3000 (anonymous viewer access; admin login admin/admin)
 apiVersion: v1
 kind: Service
 metadata:
   name: grafana
   namespace: mlops-exp8
 spec:
-  type: NodePort
+  type: LoadBalancer
   selector:
     app: grafana
   ports:
     - port: 3000
       targetPort: 3000
-      nodePort: 30300

@@ -44,7 +44,7 @@ python run.py          # UI on http://localhost:8501, metrics on http://localhos
 
 ```bash
 docker build -t iris-mlops:1.0 .
-docker run -d --name iris-app -p 8501:8501 -p 8000:8000 iris-mlops:1.0
+docker run -d --name iris-app -p 8501:8501 -p 8001:8000 iris-mlops:1.0   # metrics on host port 8001
 ```
 
 ## Kubernetes + monitoring
@@ -56,9 +56,11 @@ kubectl get all -n mlops-exp8
 
 | Service | URL |
 |---|---|
-| Streamlit app | http://localhost:30501 |
-| Prometheus | http://localhost:30090 |
-| Grafana (dashboard "Iris MLOps - Model Monitoring") | http://localhost:30300 |
+| Streamlit app | http://localhost:8501 |
+| Prometheus | http://localhost:9090 |
+| Grafana (dashboard "Iris MLOps - Model Monitoring") | http://localhost:3000 |
+
+Services are `LoadBalancer` type; Docker Desktop's Kubernetes exposes them on `localhost`.
 
 Exported metrics: `iris_predictions_total{species,source}`, `iris_prediction_latency_seconds`,
 `iris_prediction_confidence`, `iris_input_feature_value{feature}`, `iris_app_sessions_total`,

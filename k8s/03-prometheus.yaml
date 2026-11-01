@@ -52,17 +52,16 @@ spec:
           configMap:
             name: prometheus-config
 ---
-# Prometheus UI exposed on http://localhost:30090
+# Prometheus UI exposed on http://localhost:9090
 apiVersion: v1
 kind: Service
 metadata:
   name: prometheus
   namespace: mlops-exp8
 spec:
-  type: NodePort
+  type: LoadBalancer
   selector:
     app: prometheus
   ports:
     - port: 9090
       targetPort: 9090
-      nodePort: 30090

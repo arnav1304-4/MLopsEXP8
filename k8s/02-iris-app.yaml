@@ -44,14 +44,14 @@ spec:
               cpu: 500m
               memory: 512Mi
 ---
-# Streamlit UI exposed on http://localhost:30501
+# Streamlit UI exposed on http://localhost:8501 (Docker Desktop maps LoadBalancer services to localhost)
 apiVersion: v1
 kind: Service
 metadata:
   name: iris-app
   namespace: mlops-exp8
 spec:
-  type: NodePort
+  type: LoadBalancer
   sessionAffinity: ClientIP
   selector:
     app: iris-app
@@ -59,7 +59,6 @@ spec:
     - name: http
       port: 8501
       targetPort: http
-      nodePort: 30501
 ---
 # Headless service so Prometheus can discover and scrape every pod individually
 apiVersion: v1
